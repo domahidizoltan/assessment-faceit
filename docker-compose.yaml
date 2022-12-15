@@ -1,0 +1,59 @@
+version: '3.6'
+
+services:
+
+  db:
+    image: postgres:14.5-alpine
+    restart: on-failure
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: pass
+    volumes:
+      - ${PWD}/scripts/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ${PWD}/scripts/initdb.sql:/docker-entrypoint-initdb.d/02_initdb.sql
+
+  rabbitmq:
+    image: rabbitmq:3.9.25-management-alpine
+    restart: on-failure
+    ports:
+      - 15672:15672
+      - 5672:5672
+
+  adminer:
+    image: adminer
+    restart: on-failure
+    ports:
+      - 9000:8080
+  
+  swaggereditor:
+    image: swaggerapi/swagger-editor
+    volumes:
+      - ${PWD}/api:/api
+    environment:
+      - SWAGGER_FILE=/api/users.yaml
+    ports:
+      - 80:8080
+
+  # userservice:
+  #   build: .
+  #   image: faceit/userservice
+  #   depends_on:
+  #     - db
+  #     - rabbitmq
+  #   environment:
+  #     - SERVER_HOST=0.0.0.0
+  #     - SERVER_PORT=8000
+  #     - PG_HOST=db
+  #     - PG_PORT=5432
+  #     - PG_USER=admin
+  #     - PG_PASSWORD=pass
+  #     - PG_DATABASE=users
+  #     - RMQ_HOST=rabbitmq
+  #     - RMQ_POST=5672
+  #     - RMQ_USER=guest
+  #     - RMQ_PASSWORD=guest
+  #     - REQUEST_TIMEOUT=5s
+  #     - USER_EVENT_EXCHANGE=events.user

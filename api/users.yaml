@@ -1,0 +1,323 @@
+openapi: 3.0.1
+info:
+  title: User management service
+  contact:
+    name: Zoltan Domahidi
+    email: domahidizoltan@gmail.com
+  version: 1.0.0
+servers:
+- url: http://localhost:8000/api/v1
+tags:
+- name: users
+  description: Manage users
+paths:
+  /users:
+    get:
+      tags:
+      - users
+      summary: Paginated and filtered list of users
+      description: The results are ordered by `created_at` and `email`
+      operationId: List
+      parameters:
+      - name: page
+        in: query
+        description: page number
+        schema:
+          type: integer
+          default: 0
+      - name: pagesize
+        in: query
+        description: number of listed items
+        schema:
+          type: integer
+          default: 10
+      - name: first_name
+        in: query
+        description: filter results by first name starting with
+        schema:
+          minLength: 2
+          type: string
+      - name: last_name
+        in: query
+        description: filter results by last name starting with
+        schema:
+          minLength: 2
+          type: string
+      - name: nickname
+        in: query
+        description: filter results by nickname starting with
+        schema:
+          minLength: 2
+          type: string
+      - name: email
+        in: query
+        description: filter results by email starting with
+        schema:
+          minLength: 2
+          type: string
+      - name: country
+        in: query
+        description: filter results by country code
+        schema:
+          maxLength: 2
+          minLength: 2
+          type: string
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        400:
+          description: invalid query
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+      - users
+      summary: Create user
+      operationId: Create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserWithPassword'
+        required: false
+      responses:
+        201:
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        400:
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-codegen-request-body-name: body
+  /users/{id}:
+    get:
+      tags:
+      - users
+      summary: Get user by id
+      operationId: GetByID
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        400:
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: user not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - users
+      summary: Delete user by id
+      operationId: DeleteByID
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+      responses:
+        204:
+          description: deleted
+          content: {}
+        400:
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+      - users
+      summary: Update user by id
+      operationId: UpdateByID
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserWithPassword'
+        required: false
+      responses:
+        200:
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        400:
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: user not exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+      - correlation_id
+      - status
+      - message
+      - time
+      properties:
+        correlation_id:
+          type: string
+          format: uuid
+          x-go-type: uuid.UUID
+          x-go-type-import:
+            path: github.com/google/uuid
+        status:
+          type: integer
+        message:
+          type: string
+        time:
+          type: string
+          format: date-time
+    User:
+      type: object
+      properties:
+        first_name:
+          minLength: 2
+          type: string
+        last_name:
+          minLength: 2
+          type: string
+        nickname:
+          minLength: 3
+          type: string
+        email:
+          type: string
+          format: email
+        country:
+          maxLength: 2
+          minLength: 2
+          type: string
+    UserResponse:
+      allOf:
+      - $ref: '#/components/schemas/User'
+      - required:
+        - id
+        - country
+        - email
+        - first_name
+        - last_name
+        - nickname
+        type: object
+        properties:
+          id:
+            type: string
+            format: uuid
+            x-go-type: uuid.UUID
+            x-go-type-import:
+              path: github.com/google/uuid
+          created_at:
+            type: string
+            format: date-time
+          updated_at:
+            type: string
+            format: date-time
+    UpdateUserWithPassword:
+      allOf:
+      - $ref: '#/components/schemas/User'
+      - type: object
+        properties:
+          password:
+            type: string
+            format: password
+    UserWithPassword:
+      allOf:
+      - $ref: '#/components/schemas/UpdateUserWithPassword'
+      - type: object
+        required:
+        - country
+        - email
+        - first_name
+        - last_name
+        - nickname
+        properties:
+          password:
+            type: string
+            format: password
